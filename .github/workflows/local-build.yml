@@ -1,0 +1,31 @@
+# Builds VoiceInk with `make local` (the developer's documented self-build:
+# LOCAL_BUILD, ad-hoc signed, no auto-updates) on a GitHub Mac runner, so no
+# Xcode is needed on the machine that runs it. Run it from the Actions tab
+# (or `gh workflow run local-build.yml`), then download VoiceInk-app.zip.
+name: Local build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build
+        run: make local LOCAL_CODESIGN_IDENTITY=-
+
+      # ditto keeps the framework symlinks and permissions a plain zip would break
+      - name: Package
+        run: ditto -c -k --keepParent "$HOME/Downloads/VoiceInk.app" VoiceInk-app.zip
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: VoiceInk-app.zip
+          archive: false
+          retention-days: 30
